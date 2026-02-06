@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Servicio de Aplicación FastAPI - Producción
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: clientes-monolito-docker-app
+    restart: always
+
+    environment:
+      DB_HOST: clientes-monolito-docker-db
+      DB_NAME: clientes_db
+      DB_USER: clientes
+      DB_PASSWORD: clientes123
+      DB_PORT: 3306
+      
+      # Configuración para proxy inverso
+      VIRTUAL_HOST: clientes.docker.sulbaranjc.com
+      VIRTUAL_PORT: "8000"
+      
+      # Configuración de aplicación
+      DEBUG: "false"
+      LOG_LEVEL: "INFO"
+
+    expose:
+      - "8000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - clientes-monolito-docker-network
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio de Base de Datos MariaDB - Producción
+  db:
+    image: mariadb:10.6
+    container_name: clientes-monolito-docker-db
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: clientes_db
+      MYSQL_USER: clientes
+      MYSQL_PASSWORD: clientes123
+      # Configuración de MariaDB
+      MYSQL_INITDB_SKIP_TZINFO: "yes"
+
+    volumes:
+      - clientes-monolito-docker-db-data:/var/lib/mysql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - clientes-monolito-docker-network
+
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  clientes-monolito-docker-db-data:
+    driver: local
+
+networks:
+  clientes-monolito-docker-network:
+    driver: bridge

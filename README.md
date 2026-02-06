@@ -6,6 +6,17 @@ Docker es una herramienta que te permite **encapsular tu aplicación y su base d
 
 ---
 
+## 📋 Estructura de Archivos Docker
+
+Este proyecto usa archivos Docker específicos por entorno:
+
+```
+Dockerfile.dev                    # Imagen para desarrollo
+docker-compose.dev.yml            # Configuración para desarrollo
+```
+
+---
+
 ## 📋 Requisitos
 
 Tienes que tener instalado:
@@ -25,10 +36,10 @@ docker-compose --version
 
 ```bash
 # Elimina cualquier contenedor o volumen previo
-docker compose down -v
+docker compose -f docker-compose.dev.yml down -v
 
 # Levanta el proyecto completamente nuevo
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 ⚠️ **Nota:** La opción `-v` elimina volúmenes. Solo úsalo si quieres empezar con una base de datos limpia.
@@ -42,7 +53,7 @@ docker compose up -d
 1. Abre PowerShell (Windows) o Terminal (Linux/Mac) en la carpeta del proyecto
 2. Ejecuta:
 ```bash
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 Espera 5-10 segundos a que todo se inicie (la primera vez tarda más).
@@ -95,7 +106,7 @@ Los estudiantes pueden acceder a la BD desde **MySQL Workbench** para ver las ta
 
 ### Opción 1: Ver estado de los contenedores
 ```bash
-docker compose ps
+docker compose -f docker-compose.dev.yml ps
 ```
 
 Deberías ver:
@@ -122,7 +133,7 @@ Ctrl + C
 
 O en otra terminal ejecuta:
 ```bash
-docker compose down
+docker compose -f docker-compose.dev.yml down
 ```
 
 ---
@@ -131,12 +142,12 @@ docker compose down
 
 ```
 proyecto/
-├── Dockerfile              ← Imagen de la aplicación
-├── docker-compose.yml      ← Configuración de servicios
-├── README.md               ← Este archivo
-├── ENTENDIENDO-DOCKER.md   ← Explicación de la configuración
-├── requirements.txt        ← Dependencias Python
-├── init_db.sql            ← Inicialización de BD
+├── Dockerfile.dev              ← Imagen de la aplicación (desarrollo)
+├── docker-compose.dev.yml      ← Configuración de servicios (desarrollo)
+├── README.md                   ← Este archivo
+├── ENTENDIENDO-DOCKER.md       ← Explicación de la configuración
+├── requirements.txt            ← Dependencias Python
+├── init_db.sql                ← Inicialización de BD
 ├── app/
 │   ├── main.py
 │   ├── database.py
@@ -163,19 +174,19 @@ Docker crea una red interna para que los contenedores se comuniquen. Así la app
 
 ```bash
 # Ver estado de los contenedores
-docker-compose ps
+docker compose -f docker-compose.dev.yml ps
 
 # Ver logs (mensajes)
-docker-compose logs -f
+docker compose -f docker-compose.dev.yml logs -f
 
 # Entrar en la aplicación
-docker-compose exec app bash
+docker compose -f docker-compose.dev.yml exec app bash
 
 # Reiniciar todo
-docker-compose restart
+docker compose -f docker-compose.dev.yml restart
 
 # Limpiar todo (CUIDADO: elimina los datos)
-docker-compose down -v
+docker compose -f docker-compose.dev.yml down -v
 ```
 
 ---
@@ -184,19 +195,19 @@ docker-compose down -v
 
 ### "No puedo conectar a la base de datos"
 ```bash
-docker-compose logs mysql
+docker compose -f docker-compose.dev.yml logs mysql
 ```
 Espera unos segundos. MySQL tarda en iniciar.
 
 ### "El puerto 8000 ya está en uso"
-Ya hay otra aplicación usando ese puerto. Cierra lo que esté usando puerto 8000 o cambia el puerto en `docker-compose.yml`.
+Ya hay otra aplicación usando ese puerto. Cierra lo que esté usando puerto 8000 o cambia el puerto en `docker-compose.dev.yml`.
 
 ### "Docker no está instalado"
 Descarga Docker Desktop desde [docker.com](https://www.docker.com/products/docker-desktop) e instálalo.
 
 ### "No puedo conectar a MySQL con Workbench"
 Asegúrate de que:
-- `docker compose ps` muestra `clientes-mysql` con estado `(healthy)`
+- `docker compose -f docker-compose.dev.yml ps` muestra `clientes-mysql` con estado `(healthy)`
 - Estás usando `localhost` como hostname
 - El puerto es `3306`
 - Las credenciales son correctas: usuario=`usuario`, contraseña=`usuario123`
@@ -207,12 +218,12 @@ Asegúrate de que:
 
 1. **Levantar servidor**
    ```bash
-   docker compose up -d
+   docker compose -f docker-compose.dev.yml up -d
    ```
 
 2. **Ver estado**
    ```bash
-   docker compose ps
+   docker compose -f docker-compose.dev.yml ps
    ```
 
 3. **Desarrollar**
@@ -224,7 +235,7 @@ Asegúrate de que:
 
 5. **Cerrar servidor**
    ```bash
-   docker compose down
+   docker compose -f docker-compose.dev.yml down
    ```
    O presiona `Ctrl + C` en la terminal
 
@@ -234,9 +245,9 @@ Asegúrate de que:
 
 | Acción | Comando |
 |--------|---------|
-| Levantar | `docker compose up -d` |
-| Ver estado | `docker compose ps` |
-| Ver logs | `docker compose logs -f` |
+| Levantar | `docker compose -f docker-compose.dev.yml up -d` |
+| Ver estado | `docker compose -f docker-compose.dev.yml ps` |
+| Ver logs | `docker compose -f docker-compose.dev.yml logs -f` |
 | Ver logs solo app | `docker compose logs -f app` |
 | Entrar a bash | `docker compose exec app bash` |
 | Cerrar (otra terminal) | `docker compose down` |

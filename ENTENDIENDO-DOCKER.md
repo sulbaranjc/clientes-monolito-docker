@@ -1,12 +1,27 @@
 # 🐳 Entendiendo Docker Compose - Configuración Explicada
 
-## ¿Qué es docker-compose.yml?
+## ¿Qué es docker-compose.dev.yml?
 
-Es un archivo que define **todos los servicios que necesita tu aplicación**. En nuestro caso:
+Es un archivo que define **todos los servicios que necesita tu aplicación en desarrollo**. En nuestro caso:
 1. La **aplicación Python** (FastAPI)
 2. La **base de datos** (MySQL)
 
-Sin Docker Compose tendrías que ejecutar muchos comandos. Con este archivo, uno solo: `docker-compose up -d`
+Sin Docker Compose tendrías que ejecutar muchos comandos. Con este archivo, uno solo: `docker compose -f docker-compose.dev.yml up -d`
+
+---
+
+## 📋 Estructura de Archivos Docker
+
+Este proyecto sigue la mejor práctica de separar configuraciones por entorno:
+
+```
+Dockerfile.dev                  ← Imagen para desarrollo
+docker-compose.dev.yml          ← Configuración para desarrollo
+```
+
+Los nombres con `.dev` indican que son específicos para desarrollo. En el futuro, podríamos agregar:
+- `Dockerfile.prod` para producción
+- `docker-compose.prod.yml` para producción
 
 ---
 
@@ -32,13 +47,13 @@ services:
 ```yaml
 services:
   app:
-    build: .
+    build: ./Dockerfile.dev         # Construye con el Dockerfile.dev
     container_name: clientes-app
     ...
 ```
 
 **¿Qué significa?**
-- **build: .** → Construye una imagen usando el Dockerfile en la carpeta actual
+- **build: ./Dockerfile.dev** → Construye una imagen usando el Dockerfile.dev en la carpeta actual
 - **container_name: clientes-app** → El contenedor se llamará "clientes-app"
 
 ---
@@ -116,7 +131,7 @@ Te mostrará qué contenedores están usando esa red.
 
 ## 🚨 Si Hay Conflicto de Red
 
-Si ejecutas `docker-compose up -d` y ves error como:
+Si ejecutas `docker compose -f docker-compose.dev.yml up -d` y ves error como:
 
 ```
 Error response from daemon: network clientes-network is in use
@@ -124,7 +139,7 @@ Error response from daemon: network clientes-network is in use
 
 **Solución 1: Cambiar el nombre de la red**
 
-Edita `docker-compose.yml`:
+Edita `docker-compose.dev.yml`:
 ```yaml
 networks:
   clientes-network-v2:     # ← Cambiar nombre
@@ -146,14 +161,14 @@ services:
 
 ```bash
 docker network rm clientes-network
-docker-compose up -d
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 ⚠️ CUIDADO: Solo hazlo si nadie está usando esa red.
 
 ---
 
-## 📊 Estructura Completa Explicada
+## 📊 Estructura Completa Explicada (docker-compose.dev.yml)
 
 ```yaml
 version: '3.8'
@@ -169,7 +184,7 @@ services:
       MYSQL_USER: usuario
       MYSQL_PASSWORD: usuario123
     ports:
-      - "3306:3306"                   # Puerto: Host:Container
+      - "3307:3306"                   # Puerto: Host:Container
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql  # Script de inicio
       - mysql_data:/var/lib/mysql     # Almacenar datos
@@ -181,7 +196,7 @@ services:
       retries: 5
 
   app:                                # Servicio 2: Aplicación
-    build: .                           # Construir con Dockerfile
+    build: ./Dockerfile.dev           # Construir con Dockerfile.dev
     container_name: clientes-app      # Nombre único del contenedor
     environment:                      # Variables de entorno
       DB_HOST: mysql                  # Conectarse a servicio "mysql"
@@ -192,7 +207,7 @@ services:
     ports:
       - "8000:8000"                   # Puerto web
     volumes:
-      - .:/app                         # Código en sincronía
+      - .:/app                         # Código en sincronía (hot reload)
       - /app/__pycache__              # Excepto cache
     networks:
       - clientes-network              # Conectado a esta red
@@ -277,7 +292,7 @@ docker ps -a
 docker volume ls
 
 # Eliminar todo (CUIDADO)
-docker-compose down -v
+docker compose -f docker-compose.dev.yml down -v
 ```
 
 ---
@@ -287,7 +302,7 @@ docker-compose down -v
 ### Ejercicio 1: Verificar la Configuración
 
 Pide a tus alumnos que:
-1. Ejecuten `docker-compose up -d`
+1. Ejecuten `docker compose -f docker-compose.dev.yml up -d`
 2. Luego `docker network ls`
 3. Encuentren `clientes-network`
 4. Ejecuten `docker network inspect clientes-network`
@@ -300,13 +315,13 @@ docker ps
 ```
 
 Deberían ver:
-- `clientes-mysql` (Puerto 3306)
+- `clientes-mysql` (Puerto 3307 en el host → 3306 en el contenedor)
 - `clientes-app` (Puerto 8000)
 
 ### Ejercicio 3: Conectar a MySQL
 
 ```bash
-docker-compose exec mysql mysql -u usuario -p clientes_db
+docker compose -f docker-compose.dev.yml exec mysql mysql -u usuario -p clientes_db
 ```
 
 (Contraseña: usuario123)

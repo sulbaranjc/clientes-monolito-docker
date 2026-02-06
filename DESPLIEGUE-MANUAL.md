@@ -45,7 +45,84 @@ Servidor (REMOTE)
 
 ---
 
-## 🎨 Paso 1: Cambios en DEV
+## � Las Mejores Prácticas: ¿Por qué 3 ramas?
+
+### ¿Por qué "duplicamos" cambios si pasamos de dev a deploy Y de deploy a main?
+
+Excelente pregunta. Esto parece redundante, pero es la **práctica profesional estándar** y te explico por qué:
+
+#### 🚨 La realidad: `deploy` es tu **GATEKEEP** de producción
+
+```
+dev     = "Escribo código aquí (inestable, experimental)"
+deploy  = "Pruebo cambios aquí ANTES de producción (testing)"
+main    = "Solo cambios que PASARON el testing y van a PRODUCCIÓN"
+```
+
+#### ¿Por qué no desplegar directo desde deploy?
+
+**Mala práctica:**
+```bash
+git pull origin deploy
+docker compose up -d
+# ⚠️  Cualquier cosa en deploy va directo a producción
+# ¿Qué pasó en deploy? ¿Está testeado? ¿Es seguro?
+# No se sabe.
+```
+
+**Buena práctica (profesional):**
+```bash
+git pull origin main
+docker compose up -d
+# ✅ Main SOLO tiene cambios que PASARON testing
+# ✅ Main es INMUTABLE hasta que realmente funciona
+# ✅ Auditoria clara: "¿qué versión está en producción?" → main
+```
+
+#### 📊 Comparación de flujos
+
+| Aspecto | Malo: Desplegar de deploy | Bueno: Desplegar de main |
+|---------|---------------------------|--------------------------|
+| **¿Qué hay en main?** | Lo que alguien metió | Solo lo que funciona |
+| **Testing** | Ninguno | Obligatorio en deploy |
+| **Rollback** | Confuso, main desincronizado | Limpio: git reset main |
+| **Auditoría** | "¿Qué versión está viva?" | "Mira main, eso está vivo" |
+| **Seguridad** | Alto riesgo | Control total |
+
+#### 🎯 La "redundancia" es en realidad **control de calidad**
+
+```
+Tu máquina:
+  dev ──(merge)──> deploy [TESTING AQUÍ]
+                      ↓
+                   ¿OK?
+                      ↓
+                    SÍ → main ──(push)──> SERVIDOR
+```
+
+**Lo que pasa:**
+
+1. **En dev:** Escribes código sin restricciones
+2. **En deploy:** Haces merge y PRUEBAS. ¿Se rompió algo? No afecta main
+3. **En main:** SOLO lo que pasó el testing. Esto es SAGRADO
+4. **En servidor:** Siempre trae main. Siempre es la versión que sabes que funciona
+
+#### 💡 Analógía del mundo real
+
+Es como un medicamento:
+
+```
+Laboratorio (dev)     → Formulan medicina experimental
+Pruebas Clínicas (deploy) → La prueban en voluntarios
+Aprobación (main)     → "OK, esto es seguro"
+Farmacia (servidor)   → Distribuyen lo aprobado
+```
+
+Si la farmacia toma medicinas de "pruebas clínicas" sin aprobación final, ¡catástrofe!
+
+---
+
+## �🎨 Paso 1: Cambios en DEV
 
 Cuando haces modificaciones al código en tu máquina.
 
@@ -131,9 +208,9 @@ To https://github.com/sulbaranjc/clientes-monolito-docker.git
 
 ---
 
-## 🚀 Paso 2: Preparar DEPLOY
+## 🚀 Paso 2: Preparar DEPLOY (Testing)
 
-Cuando tienes cambios en `dev` listos para desplegar a producción.
+**Importante:** En deploy NO DESPLIEGAS AÚN. Solo traes cambios para **PROBAR** antes de producción.
 
 ### 2.1 Cambiar a rama deploy
 
@@ -191,9 +268,10 @@ git push origin deploy
 
 ---
 
-## 📦 Paso 3: Desplegar a MAIN
+## 📦 Paso 3: Desplegar a MAIN (Producción)
 
-Cuando quieres que los cambios vayan a producción.
+**Esto es importante:** Solo mergeas deploy a main CUANDO TODO ESTÁ TESTED Y FUNCIONA.
+Main es SAGRADO. Main es PRODUCCIÓN.
 
 ### 3.1 Cambiar a rama main
 
@@ -244,9 +322,11 @@ To https://github.com/sulbaranjc/clientes-monolito-docker.git
 
 ---
 
-## 🖥️ Paso 4: Desplegar en Servidor
+## 🖥️ Paso 4: Desplegar en Servidor (desde MAIN)
 
-Ahora actualizar el servidor con los cambios.
+**Regla de oro:** El servidor SIEMPRE trae cambios de `main`, NUNCA de `deploy`.
+
+Esto garantiza que en servidor solo hay código que pasó testing.
 
 ### 4.1 Conectarse al servidor
 
@@ -461,6 +541,8 @@ curl -i http://localhost:8000
 ---
 
 ## 🎯 Ejemplo Completo (Paso a Paso)
+
+> **Recuerda:** dev = escribir | deploy = testear | main = producción
 
 ### DÍA 1: Desarrollo en tu máquina
 

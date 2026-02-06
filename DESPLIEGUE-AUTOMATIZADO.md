@@ -20,7 +20,7 @@
 
 ## ¿Qué es este script?
 
-Es un archivo `deploy.sh` que **automatiza TODO el flujo de despliegue en una sola ejecución:**
+Es un archivo `dev-deploy.sh` que **automatiza TODO el flujo de despliegue en una sola ejecución:**
 
 ```
 dev → deploy → main → servidor → docker rebuild → verificación
@@ -178,7 +178,7 @@ nano app/templates/pages/index.html
 ### Paso 2: Ejecutar script
 
 ```bash
-./deploy.sh
+./dev-deploy.sh
 ```
 
 ### Paso 3: Ingresar datos

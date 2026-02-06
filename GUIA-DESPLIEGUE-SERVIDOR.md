@@ -281,17 +281,17 @@ a1b2c3d4e5f6    clientes-monolito-docker-app  0.5%    120MB
 
 ## 🌐 Acceso a la Aplicación
 
-### Desde el Servidor
+### Desde el Servidor (Local)
 
 ```bash
-# Acceso directo a la aplicación
+# Acceso directo a la aplicación por puerto
 curl http://localhost:8000
 
-# O en navegador (si tienes acceso gráfico):
-# http://localhost:8000
+# Ver respuesta HTML
+curl -s http://localhost:8000 | head -20
 ```
 
-### Desde otra Máquina en la Red
+### Desde otra Máquina en la Red (por IP)
 
 ```bash
 # Usando la IP del servidor (ejemplo: 192.168.1.100)
@@ -301,17 +301,152 @@ curl http://192.168.1.100:8000
 # http://192.168.1.100:8000
 ```
 
-### A través del Dominio (Si nginx-proxy está configurado)
+### A través del Dominio (Recomendado - nginx-proxy)
 
 ```bash
 # Desde cualquier lugar con acceso al dominio:
-# http://clientes.docker.sulbaranjc.com
+curl http://clientes-monolito-docker.docker.sulbaranjc.com/
+
+# En navegador:
+# http://clientes-monolito-docker.docker.sulbaranjc.com/
 ```
 
-> **Nota**: Esto requiere que:
+> **Importante**: Esto requiere que:
 > 1. nginx-proxy esté corriendo
 > 2. El registro DNS apunte al servidor
-> 3. Las variables `VIRTUAL_HOST` estén bien configuradas
+> 3. La variable `VIRTUAL_HOST: clientes-monolito-docker.docker.sulbaranjc.com` esté configurada en `docker-compose.prod.yml`
+
+---
+
+## ✅ Verificación Completa Post-Despliegue
+
+### Paso 1: Verificar que nginx-proxy esté Corriendo
+
+```bash
+# Verificar que nginx-proxy existe
+docker ps | grep nginx-proxy
+
+# Si no aparece, debe estar en otro servidor o contenedor
+# Consulta con tu equipo de DevOps
+```
+
+### Paso 2: Verificar la Red nginx-proxy
+
+```bash
+# Inspeccionar la red compartida
+docker network inspect nginx-proxy
+
+# Deberías ver en "Containers":
+# "clientes-monolito-docker-app": {...}
+```
+
+### Paso 3: Probar Conectividad Local (en el servidor)
+
+```bash
+# Test 1: Directamente por localhost
+curl -i http://localhost:8000
+
+# Salida esperada:
+# HTTP/1.1 200 OK
+# Content-Type: text/html; charset=utf-8
+# ...
+```
+
+### Paso 4: Probar desde otra Máquina (por IP)
+
+```bash
+# Desde tu máquina local o administrador
+# Reemplaza 192.168.1.100 con la IP real del servidor
+
+curl -i http://192.168.1.100:8000
+
+# Salida esperada:
+# HTTP/1.1 200 OK
+```
+
+### Paso 5: Probar a través del Dominio
+
+```bash
+# Desde cualquier lugar con acceso al dominio
+curl -i http://clientes-monolito-docker.docker.sulbaranjc.com/
+
+# Salida esperada:
+# HTTP/1.1 200 OK
+# Server: nginx/...
+# Content-Type: text/html; charset=utf-8
+```
+
+### Paso 6: Verificar que nginx-proxy Reconoce el Contenedor
+
+```bash
+# Ver logs de nginx-proxy
+docker logs nginx-proxy | grep clientes-monolito-docker
+
+# Deberías ver algo como:
+# ... clientes-monolito-docker.docker.sulbaranjc.com ...
+# ... address assigned ...
+```
+
+### Paso 7: Verificar la Configuración de VIRTUAL_HOST
+
+```bash
+# Ver las variables de entorno del contenedor app
+docker inspect clientes-monolito-docker-app | grep VIRTUAL_HOST
+
+# Salida esperada:
+# "VIRTUAL_HOST=clientes-monolito-docker.docker.sulbaranjc.com",
+```
+
+---
+
+## 🔍 Tabla de Verificación por Acceso
+
+| Tipo de Acceso | URL | Dónde Verificar | Estado Esperado |
+|---|---|---|---|
+| **Local (servidor)** | `http://localhost:8000` | Terminal del servidor | HTTP 200 ✅ |
+| **Red Interna (IP)** | `http://192.168.1.100:8000` | Otra máquina en red | HTTP 200 ✅ |
+| **Dominio (nginx)** | `http://clientes-monolito-docker.docker.sulbaranjc.com/` | Navegador/curl | HTTP 200 ✅ |
+| **Logs nginx-proxy** | `docker logs nginx-proxy` | Terminal servidor | Vea el dominio configurado |
+| **Red conectada** | `docker network inspect nginx-proxy` | Terminal servidor | App en la red |
+
+---
+
+## 🚨 Si No Funciona el Dominio
+
+### Checklist de Diagnóstico
+
+```bash
+# 1. ¿nginx-proxy está corriendo?
+docker ps | grep nginx-proxy
+
+# 2. ¿La app está en la red nginx-proxy?
+docker inspect clientes-monolito-docker-app | grep -A 5 "Networks"
+
+# 3. ¿VIRTUAL_HOST está correcto?
+docker inspect clientes-monolito-docker-app | grep VIRTUAL_HOST
+
+# 4. ¿DNS apunta al servidor?
+nslookup clientes-monolito-docker.docker.sulbaranjc.com
+
+# 5. ¿El firewall permite acceso?
+sudo ufw status
+sudo ufw allow 80
+sudo ufw allow 443
+```
+
+### Soluciones Comunes
+
+```bash
+# Si nginx-proxy no reconoce el contenedor
+docker compose -f docker-compose.prod.yml restart app
+
+# Si DNS no resuelve
+# Contacta a tu administrador de DNS/infraestructura
+
+# Si firewall bloquea
+sudo ufw allow from any to any port 80 proto tcp
+sudo ufw allow from any to any port 443 proto tcp
+```
 
 ---
 
